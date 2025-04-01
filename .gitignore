@@ -1,2 +1,9 @@
-weights
+
 __pycache__
+*avi
+*wav
+*mp3
+*mp4
+*png
+*MOV
+*pth
