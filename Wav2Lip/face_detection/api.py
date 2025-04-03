@@ -53,7 +53,7 @@ class FaceAlignment:
         network_size=NetworkSize.LARGE,
         device="cuda",
         flip_input=False,
-        face_detector="sfd",
+        face_detector="sfd.sfd_detector",
         verbose=False,
     ):
         self.device = device
@@ -68,13 +68,13 @@ class FaceAlignment:
 
         # Get the face detector
         face_detector_module = __import__(
-            "face_detection.detection." + face_detector,
+            "Wav2Lip.face_detection.detection." + face_detector,
             globals(),
             locals(),
             [face_detector],
             0,
         )
-        self.face_detector = face_detector_module.FaceDetector(
+        self.face_detector = face_detector_module.SFDDetector(
             device=device, verbose=verbose
         )
 
