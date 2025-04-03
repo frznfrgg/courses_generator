@@ -7,15 +7,14 @@ import cv2
 import face_detection
 import numpy as np
 import torch
-from models import Wav2Lip
+import face_detection.api
+from models.wav2lip import Wav2Lip
 from tqdm import tqdm
 
 img_size = 96
-face = "/home/frznfrg/VScodes/work/courses_generator/data/IMG_1960.MOV"
-audio_path = "/home/frznfrg/VScodes/work/courses_generator/data/splice.mp3"
-checkpoint_path = (
-    "/home/frznfrg/VScodes/work/courses_generator/Wav2Lip/checkpoints/wav2lip_gan.pth"
-)
+face = "/home/usr2/Nikita/ai_courses/data/subclip.mp4"
+audio_path = "/home/usr2/Nikita/ai_courses/data/audio_subclip.mp3"
+checkpoint_path = "/home/usr2/Nikita/ai_courses/Wav2Lip/checkpoints/wav2lip_gan.pth"
 static = False
 face_det_batch_size = 1
 pads = [0, 10, 0, 0]
@@ -41,8 +40,8 @@ def get_smoothened_boxes(boxes, T):
 
 
 def face_detect(images):
-    detector = face_detection.FaceAlignment(
-        face_detection.LandmarksType._2D, flip_input=False, device=device
+    detector = face_detection.api.FaceAlignment(
+        face_detection.api.LandmarksType._2D, flip_input=False, device=device
     )
 
     batch_size = face_det_batch_size
@@ -71,7 +70,7 @@ def face_detect(images):
     for rect, image in zip(predictions, images):
         if rect is None:
             cv2.imwrite(
-                "/home/frznfrg/VScodes/work/courses_generator/Wav2Lip/temp/faulty_frame.jpg",
+                "/home/usr2/Nikita/ai_courses/Wav2Lip/temp/faulty_frame.jpg",
                 image,
             )  # check this frame where the face was not detected.
             raise ValueError(
@@ -178,8 +177,8 @@ def load_model(path):
 
 
 def main():
-    audio_path = "/home/frznfrg/VScodes/work/courses_generator/data/splice.mp3"
-    face = "/home/frznfrg/VScodes/work/courses_generator/data/IMG_1960.MOV"
+    face = "/home/usr2/Nikita/ai_courses/data/subclip.mp4"
+    audio_path = "/home/usr2/Nikita/ai_courses/data/audio_subclip.mp3"
     print(face, os.path.isfile(face))
     if not os.path.isfile(face):
         raise ValueError("--face argument must be a valid path to video/image file")
@@ -225,13 +224,11 @@ def main():
         print("Extracting raw audio...")
         command = "ffmpeg -y -i {} -strict -2 {}".format(
             audio_path,
-            "/home/frznfrg/VScodes/work/courses_generator/Wav2Lip/temp/temp.wav",
+            "/home/usr2/Nikita/ai_courses/Wav2Lip/temp/temp.wav",
         )
 
         subprocess.call(command, shell=True)
-        audio_path = (
-            "/home/frznfrg/VScodes/work/courses_generator/Wav2Lip/temp/temp.wav"
-        )
+        audio_path = "/home/usr2/Nikita/ai_courses/Wav2Lip/temp/temp.wav"
 
     wav = audio.load_wav(audio_path, 16000)
     mel = audio.melspectrogram(wav)
@@ -269,7 +266,7 @@ def main():
 
             frame_h, frame_w = full_frames[0].shape[:-1]
             out = cv2.VideoWriter(
-                "/home/frznfrg/VScodes/work/courses_generator/Wav2Lip/temp/result.avi",
+                "/home/usr2/Nikita/ai_courses/Wav2Lip/temp/result.avi",
                 cv2.VideoWriter_fourcc(*"DIVX"),
                 fps,
                 (frame_w, frame_h),
@@ -294,8 +291,8 @@ def main():
 
     command = "ffmpeg -y -i {} -i {} -strict -2 -q:v 1 {}".format(
         audio_path,
-        "/home/frznfrg/VScodes/work/courses_generator/Wav2Lip/temp/result.avi",
-        "/home/frznfrg/VScodes/work/courses_generator/Wav2Lip/results/result_voice.mp4",
+        "/home/usr2/Nikita/ai_courses/Wav2Lip/temp/result.avi",
+        "/home/usr2/Nikita/ai_courses/Wav2Lip/results/result_voice.mp4",
     )
     subprocess.call(command, shell=platform.system() != "Windows")
 

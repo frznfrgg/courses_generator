@@ -6,8 +6,10 @@ import cv2
 import numpy as np
 import torch
 
-from Wav2Lip import audio, face_detection
-from Wav2Lip.models import Wav2Lip
+from Wav2Lip import audio
+
+from Wav2Lip.face_detection.api import FaceAlignment, LandmarksType
+from Wav2Lip.models.wav2lip import Wav2Lip
 
 
 class Wav2LipInterface:
@@ -104,8 +106,8 @@ class Wav2LipInterface:
         return boxes
 
     def face_detect(self, images):
-        detector = face_detection.FaceAlignment(
-            face_detection.LandmarksType._2D, flip_input=False, device=self.device
+        detector = FaceAlignment(
+            LandmarksType._2D, flip_input=False, device=self.device
         )
 
         batch_size = 1
