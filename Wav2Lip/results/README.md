@@ -1,1 +1,0 @@
-# Default result folder of Wav2Lip model

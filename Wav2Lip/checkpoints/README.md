@@ -1,1 +1,0 @@
-# Place Wav2Lip model checkpoint here (wav2lip_gan.pth)
