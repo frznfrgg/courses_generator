@@ -7,24 +7,26 @@ import numpy as np
 import torch
 
 from Wav2Lip import audio
-
 from Wav2Lip.face_detection.api import FaceAlignment, LandmarksType
 from Wav2Lip.models.wav2lip import Wav2Lip
 
 
 class Wav2LipInterface:
-    def __init__(self, video_path, audio_path, output_path="results/result_voice.mp4"):
+    def __init__(
+        self,
+        video_path,
+        audio_path,
+        output_path="results/result_voice.mp4",
+    ):
         self.video_path = video_path
         self.audio_path = audio_path
-        self.output_path = output_path
         base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.output_path = os.path.join(base_dir, output_path)
         self.temp_dir = os.path.join(base_dir, "temp")
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.img_size = 96
-        self.checkpoint_path = "/checkpoints/wav2lip_gan.pth"
-        self.static = False
-        # self.face_det_batch_size = 1
+        self.checkpoint_path = os.path.join(base_dir, "checkpoints/wav2lip_gan.pth")
         self.pads = [0, 10, 0, 0]
         self.nosmooth = False
         self.box = [-1, -1, -1, -1]
@@ -36,7 +38,6 @@ class Wav2LipInterface:
 
     def process_video(self):
         video_stream = cv2.VideoCapture(self.video_path)
-        fps = video_stream.get(cv2.CAP_PROP_FPS)
 
         full_frames = []
         while True:
@@ -44,17 +45,6 @@ class Wav2LipInterface:
             if not still_reading:
                 video_stream.release()
                 break
-            if self.resize_factor > 1:
-                frame = cv2.resize(
-                    frame,
-                    (
-                        frame.shape[1] // self.resize_factor,
-                        frame.shape[0] // self.resize_factor,
-                    ),
-                )
-
-            if self.rotate:
-                frame = cv2.rotate(frame, cv2.cv2.ROTATE_90_CLOCKWISE)
 
             y1, y2, x1, x2 = self.crop
             if x2 == -1:
@@ -65,7 +55,7 @@ class Wav2LipInterface:
             frame = frame[y1:y2, x1:x2]
 
             full_frames.append(frame)
-            return full_frames
+        return full_frames
 
     def process_audio(self):
         mel_step_size = 16
@@ -164,7 +154,7 @@ class Wav2LipInterface:
         img_batch, mel_batch, frame_batch, coords_batch = [], [], [], []
 
         if self.box[0] == -1:
-            face_det_results = self.face_detect([frames[0]])
+            face_det_results = self.face_detect(frames)
         else:
             y1, y2, x1, x2 = self.box
             face_det_results = [[f[y1:y2, x1:x2], (y1, y2, x1, x2)] for f in frames]
@@ -221,6 +211,7 @@ class Wav2LipInterface:
         mel_chunks = self.process_audio()
         full_frames = self.process_video()
         full_frames = full_frames[: len(mel_chunks)]
+
         gen = self.datagen(full_frames.copy(), mel_chunks)
         for i, (img_batch, mel_batch, frames, coords) in enumerate(gen):
             if i == 0:
