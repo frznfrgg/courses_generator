@@ -2,10 +2,9 @@ from typing import List
 
 
 class GeneratorInterface:
-    def __init__(self, video_paths: List[str], text_path: str, audio_path: str):
+    def __init__(self, video_paths: List[str], text_path: str):
         self.video_path = video_paths
         self.text_path = text_path
-        self.audio_path = audio_path
 
     def _resample_videos(self):
         pass
