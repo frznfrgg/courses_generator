@@ -1,0 +1,1 @@
+In this folder the results of generation (audio and video files) will be stored
