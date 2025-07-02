@@ -9,6 +9,8 @@ import numpy as np
 from pydub import AudioSegment
 import torchaudio
 import uuid
+import librosa
+from voicefixer import VoiceFixer
 
 class XttsInference:
     def __init__(self, xtts_model_path: str = './xtts_ru', transcriptor_data_path: str = './omogre_data'):
@@ -96,6 +98,37 @@ class XttsInference:
         required_gain = 10 ** ((target_dbfs - current_dbfs) / 20)
         normalized_audio = audio * required_gain
         return np.clip(normalized_audio, -1.0, 1.0)
+    
+    def _extract_clean_fragment(self, ref_audio: str, target_duration: int = 20, sr: int = 22050):
+        """Extracting a fragment with the lectors clear voice.
+
+        Args:
+            target_duration (int, optional): length of clean fragment of lectors voice. Defaults to 60.
+            sr (int, optional): sample rate of a  fragment. Defaults to 22050.
+        """
+        _waveform, _sample_rate = torchaudio.load(ref_audio)
+        _waveform = _waveform.mean(dim=0).numpy()  # mono
+
+        if _sample_rate != sr:
+            _waveform = librosa.resample(y=_waveform, orig_sr=_sample_rate, target_sr=sr)
+
+        trimmed, _ = librosa.effects.trim(_waveform, top_db=30)
+
+        total_len = len(trimmed)
+        max_samples = target_duration * sr
+
+        if total_len <= max_samples:
+            fragment = trimmed
+        else:
+            start = (total_len - max_samples) // 2
+            end = start + max_samples
+            fragment = trimmed[start:end]
+
+        clean_audio = ref_audio[:ref_audio.rfind(".")] + "_clean.wav"
+        torchaudio.save(clean_audio, torch.tensor(fragment).unsqueeze(0), sr)
+        voicefixer = VoiceFixer()
+        voicefixer.restore(input=clean_audio, output=clean_audio)
+        return clean_audio
 
     def __call__(self, src_text: str, reference_audio: str) -> tuple[str, torch.Tensor]:
         """
@@ -109,8 +142,10 @@ class XttsInference:
         if not os.path.isfile(reference_audio):
             raise FileNotFoundError(f"Reference audio not found: {reference_audio}")
 
+        ref_audio = self._extract_clean_fragment(reference_audio)
+
         gpt_latent, speaker_embedding = self.model.get_conditioning_latents(
-            audio_path=reference_audio,
+            audio_path=ref_audio,
             gpt_cond_len=self.config.gpt_cond_len,
             max_ref_length=self.config.max_ref_len,
             sound_norm_refs=self.config.sound_norm_refs

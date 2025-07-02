@@ -7,6 +7,9 @@ __pycache__
 *png
 *MOV
 *pth
+*pdf
+*txt
 TTS/
 artifacts/
 test.ipynb
+omogre_data/
