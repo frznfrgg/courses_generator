@@ -1,14 +1,12 @@
 import random
 import uuid
 from typing import List
-
 from moviepy.editor import AudioFileClip, VideoFileClip, concatenate_videoclips
 from mutagen.mp3 import MP3
-
-
 from moviepy import VideoFileClip
 import xtts_ru.xtts_inference
 import os
+
 class GeneratorInterface:
     def __init__(self, video_paths: List[str], text_path: str):
         self.video_paths = video_paths
