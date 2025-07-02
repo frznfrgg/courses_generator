@@ -1,9 +1,8 @@
 import os
 import random
-import uuid
 from typing import List
 
-from moviepy import AudioFileClip, VideoFileClip, concatenate_videoclips
+from moviepy.editor import VideoFileClip, concatenate_videoclips
 from mutagen.mp3 import MP3
 
 import xtts_ru.xtts_inference
@@ -52,7 +51,7 @@ class GeneratorInterface:
                     clips.append(clip)
                     accum_duration += clip.duration
                 else:
-                    clips.append(clip.subclipped(0, remaining))  # trim length if needed
+                    clips.append(clip.subclip(0, remaining))  # trim length if needed
                     accum_duration += remaining
                     break
 
@@ -63,16 +62,10 @@ class GeneratorInterface:
 
     def generate_with_wav2lip(self):
         self.generate_raw_mp3()
-        print()
-        print("Generation of mp3 ended")
-        print()
         self.generate_raw_mp4()
-        print()
-        print("Generation of mp4 ended")
-        print(self.mp4_path)
-        print()
 
         wav2lip = Wav2LipInterface(video_path=self.mp4_path, audio_path=self.mp3_path)
         wav2lip.generate()
-    def test():
-        print("Hello, world!")
+
+        os.remove(self.mp3_path)
+        os.remove(self.mp4_path)
