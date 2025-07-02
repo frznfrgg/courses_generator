@@ -58,11 +58,21 @@ class GeneratorInterface:
 
         # save results results
         final_clip = concatenate_videoclips(clips, method="compose")
-        self.mp4_path = str(uuid.uuid4()) + ".mp4"
+        self.mp4_path = "raw_video.mp4"
         final_clip.write_videofile(self.mp4_path)
 
     def generate_with_wav2lip(self):
         self.generate_raw_mp3()
+        print()
+        print("Generation of mp3 ended")
+        print()
         self.generate_raw_mp4()
+        print()
+        print("Generation of mp4 ended")
+        print(self.mp4_path)
+        print()
+
         wav2lip = Wav2LipInterface(video_path=self.mp4_path, audio_path=self.mp3_path)
         wav2lip.generate()
+    def test():
+        print("Hello, world!")
