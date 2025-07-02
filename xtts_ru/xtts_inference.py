@@ -6,6 +6,9 @@ from TTS.tts.models.xtts import Xtts
 from omogre import Transcriptor
 from typing import List
 import numpy as np
+from pydub import AudioSegment
+import torchaudio
+import uuid
 
 class XttsInference:
     def __init__(self, xtts_model_path: str = './xtts_ru', transcriptor_data_path: str = './omogre_data'):
@@ -135,6 +138,12 @@ class XttsInference:
         audio = self._normalize_volume(audio)
         audio_tensor = torch.from_numpy(audio.astype(np.float32)).unsqueeze(0)
         self._clear_gpu_cache()
-        return "".join(splitted_text), audio_tensor
+
+        output_file_path = str(uuid.uuid4())
+        torchaudio.save(output_file_path + ".wav", audio_tensor, 24000)
+        audio = AudioSegment.from_file(output_file_path + ".wav", format="wav")
+        audio.export(output_file_path + ".mp3", format="mp3", bitrate="192k")
+        os.remove(output_file_path + ".wav")
+        return "".join(splitted_text), output_file_path + ".mp3"
 
 
