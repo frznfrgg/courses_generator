@@ -11,6 +11,7 @@ import torchaudio
 import uuid
 import librosa
 from voicefixer import VoiceFixer
+import re
 
 class XttsInference:
     def __init__(self, xtts_model_path: str = './xtts_ru', transcriptor_data_path: str = './omogre_data'):
@@ -64,7 +65,7 @@ class XttsInference:
         self.model = model
         self.config = config
 
-    def _split_text(self, text: str, max_length: int = 140) -> List:
+    def _split_text(self, text: str, max_length: int = 140, min_length: int = 140) -> List[str]:
         """
         Split text
 
@@ -74,21 +75,48 @@ class XttsInference:
         Returns:
             List: splitted text
         """
-        splitted_text = []
-        while len(text) > max_length:
-            split_pos = max([text[:max_length].rfind(i) for i in ".!?"])
-            if split_pos == -1:
-                split_pos = max([text[:max_length].rfind(i) for i in ",:-)"])
-                if split_pos == -1:
-                    split_pos = text[:max_length].rfind(" ")
-                    if split_pos == -1:
-                        split_pos = max_length
-            splitted_text.append(text[:(split_pos + 1)].strip())
-            text = text[(split_pos + 1):].strip()
-        if text:
-            splitted_text.append(text)
-        
-        return splitted_text
+        primary_chunks = re.split(r'(?<=[.!?])\s+', text)
+        refined = []
+
+        for chunk in primary_chunks:
+            chunk = chunk.strip()
+            if not chunk:
+                continue
+
+            if len(chunk) <= max_length:
+                refined.append(chunk)
+            else:
+                sub_chunks = re.split(r'(?<=[,:;–—\)])\s+', chunk)
+                temp = []
+                buf = ""
+                for part in sub_chunks:
+                    part = part.strip()
+                    if not part:
+                        continue
+                    if len(buf) + len(part) <= max_length:
+                        buf += " " + part if buf else part
+                    else:
+                        if buf:
+                            temp.append(buf.strip())
+                        buf = part
+                if buf:
+                    temp.append(buf.strip())
+                refined.extend(temp)
+
+        result = []
+        i = 0
+        while i < len(refined):
+            current = refined[i]
+            if len(current) < min_length and i + 1 < len(refined):
+                combined = current + " " + refined[i + 1]
+                if len(combined) <= max_length:
+                    result.append(combined.strip())
+                    i += 2
+                    continue
+            result.append(current.strip())
+            i += 1
+
+        return result
 
     def _normalize_volume(self, audio, target_dbfs: float = -18.0):
         rms = np.sqrt(np.mean(audio**2))
@@ -154,7 +182,6 @@ class XttsInference:
         transcripted_text = "".join(self.transcriptor([src_text]))
         splitted_text = self._split_text(transcripted_text)
         audio = np.array([])
-        pause = np.zeros(2000, dtype=np.float32)
 
         for tts_text in splitted_text:
             out = self.model.inference(
@@ -168,6 +195,15 @@ class XttsInference:
                 top_k=self.config.top_k,
                 top_p=self.config.top_p,
             )
+            
+            last_char = tts_text.strip()[-1] if tts_text.strip() else ""
+            if last_char in ".!?":
+                pause = np.zeros(1500, dtype=np.float32)
+            elif last_char in ",:;–—":
+                pause = np.zeros(800, dtype=np.float32)
+            else:
+                pause = np.zeros(400, dtype=np.float32)
+
             audio = np.concatenate((audio, pause, out["wav"]))
 
         audio = self._normalize_volume(audio)
