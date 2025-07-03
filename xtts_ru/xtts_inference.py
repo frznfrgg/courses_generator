@@ -65,7 +65,7 @@ class XttsInference:
         self.model = model
         self.config = config
 
-    def _split_text(self, text: str, max_length: int = 140, min_length: int = 140) -> List[str]:
+    def _split_text(self, text: str, max_length: int = 140, min_length: int = 80) -> List[str]:
         """
         Split text
 
@@ -103,12 +103,28 @@ class XttsInference:
                     temp.append(buf.strip())
                 refined.extend(temp)
 
+        final_chunks = []
+        for chunk in refined:
+            if len(chunk) <= max_length:
+                final_chunks.append(chunk)
+            else:
+                words = chunk.split()
+                buffer = ""
+                for word in words:
+                    if len(buffer) + len(word) + 1 <= max_length:
+                        buffer += " " + word if buffer else word
+                    else:
+                        final_chunks.append(buffer.strip())
+                        buffer = word
+                if buffer:
+                    final_chunks.append(buffer.strip())
+
         result = []
         i = 0
-        while i < len(refined):
-            current = refined[i]
-            if len(current) < min_length and i + 1 < len(refined):
-                combined = current + " " + refined[i + 1]
+        while i < len(final_chunks):
+            current = final_chunks[i]
+            if len(current) < min_length and i + 1 < len(final_chunks):
+                combined = current + " " + final_chunks[i + 1]
                 if len(combined) <= max_length:
                     result.append(combined.strip())
                     i += 2
@@ -178,12 +194,12 @@ class XttsInference:
             max_ref_length=self.config.max_ref_len,
             sound_norm_refs=self.config.sound_norm_refs
         )
-
-        transcripted_text = "".join(self.transcriptor([src_text]))
-        splitted_text = self._split_text(transcripted_text)
+        
+        splitted_text = self._split_text(src_text)
+        transcripted_text = ["".join(self.transcriptor([i])) for i in splitted_text]
         audio = np.array([])
 
-        for tts_text in splitted_text:
+        for tts_text in transcripted_text:
             out = self.model.inference(
                 text=tts_text,
                 language='ru',
@@ -202,7 +218,7 @@ class XttsInference:
             elif last_char in ",:;–—":
                 pause = np.zeros(800, dtype=np.float32)
             else:
-                pause = np.zeros(400, dtype=np.float32)
+                pause = np.zeros(100, dtype=np.float32)
 
             audio = np.concatenate((audio, pause, out["wav"]))
 
@@ -215,6 +231,7 @@ class XttsInference:
         audio = AudioSegment.from_file(output_file_path + ".wav", format="wav")
         audio.export(output_file_path + ".mp3", format="mp3", bitrate="192k")
         os.remove(output_file_path + ".wav")
+        os.remove(ref_audio)
         return "".join(splitted_text), output_file_path + ".mp3"
 
 

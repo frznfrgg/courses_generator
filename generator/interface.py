@@ -1,6 +1,7 @@
 import os
 import random
 from typing import List
+import re
 
 from moviepy.editor import VideoFileClip, concatenate_videoclips
 from mutagen.mp3 import MP3
@@ -25,11 +26,29 @@ class GeneratorInterface:
         with open(self.text_path) as f:
             text = f.readlines()
         clean_text = "".join(text).replace("/n", "")
+        
+        splitted_text = re.split(r'(?<=[.!?])\s+', clean_text)
+        chunks = []
+        max_length = 2300
+        chunk = ""
+        
+        for i in splitted_text:
+            i = i.strip()
+            if (len(chunk) + len(i)) < max_length:
+                chunk += " " + i
+            else:
+                chunks.append(chunk)
+                chunk = i
+        chunks.append(chunk)
 
         xtts = xtts_ru.xtts_inference.XttsInference()
-        transc, audio = xtts(clean_text, wav_path)
 
-        self.mp3_path = audio
+        aud_names = []
+        for text in chunks:
+            transc, audio = xtts(text, wav_path)
+            aud_names.append(audio)
+
+        self.mp3_path = aud_names
         os.remove(wav_path)
 
     def generate_raw_mp4(self):

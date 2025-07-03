@@ -65,6 +65,8 @@ class Wav2LipInterface:
 
             subprocess.call(command, shell=True)
             audio_path = temp_path
+        else:
+            audio_path = self.audio_path
 
         wav = audio.load_wav(audio_path, 16000)
         mel = audio.melspectrogram(wav)
