@@ -1,4 +1,3 @@
-
 __pycache__
 *avi
 *wav
@@ -9,7 +8,8 @@ __pycache__
 *pth
 *pdf
 *txt
-TTS/
+*safetensors
+!vocab.txt
+!requirements.txt
 artifacts/
 test.ipynb
-omogre_data/
