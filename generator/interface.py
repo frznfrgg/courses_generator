@@ -8,7 +8,7 @@ from moviepy.editor import AudioFileClip, VideoFileClip, concatenate_videoclips
 
 from Wav2Lip.interface import Wav2LipInterface
 
-from f5_tts.api import F5TTS
+from F5TTS.f5_tts.api import F5TTS
 from ruaccent import RUAccent
 
 class GeneratorInterface:
@@ -43,7 +43,7 @@ class GeneratorInterface:
                 chunk = i
         chunks.append(chunk)
 
-        f5tts = F5TTS(ckpt_file="F5-TTS/ckpts/model_last_inference.safetensors", vocab_file="F5-TTS/ckpts/vocab.txt", device="cuda")
+        f5tts = F5TTS(ckpt_file="F5TTS/ckpts/model_last_inference.safetensors", vocab_file="F5TTS/ckpts/vocab.txt", device="cuda")
         accentizer = RUAccent()
         accentizer.load(omograph_model_size='turbo3.1', use_dictionary=True, tiny_mode=False)
         
