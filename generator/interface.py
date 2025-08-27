@@ -16,6 +16,7 @@ class GeneratorInterface:
         self.video_paths = video_paths
         self.text_path = text_path
         self.final_video = final_video
+        self.wav_path = self._convert_vid2aud()
 
     def _convert_vid2aud(self):
         video = VideoFileClip(self.video_paths[0])
@@ -24,14 +25,14 @@ class GeneratorInterface:
         return wav_path
 
     def generate_mp3_chunks(self):
-        wav_path = self._convert_vid2aud()
+        wav_path = self.wav_path
         with open(self.text_path) as f:
             text = f.readlines()
         clean_text = "".join(text).replace("/n", "")
         
         splitted_text = re.split(r'(?<=[.!?])\s+', clean_text)
         chunks = []
-        max_length = 2200
+        max_length = 1000
         chunk = ""
         
         for i in splitted_text:
